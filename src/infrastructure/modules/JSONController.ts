@@ -33,3 +33,4 @@ export class JSONController {
 		}
 	}
 }
+export const JSONControllerImpl = new JSONController(`${__dirname}/src/core/infrastructure/database/inMemoryDB/shops.json`)

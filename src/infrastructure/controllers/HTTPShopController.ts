@@ -4,6 +4,8 @@ import { requisitesValidator } from '../validators/RequisitesValidator';
 import { ICardRequisites } from '../../../env/types';
 import { bank } from '../modules/bank';
 import { IShopService } from '../../core/services/interface/types';
+import { shopValidator } from '../validators/ShopValidator';
+import { shopService } from '../../core/services/ShopService';
 
 export class HTTPShopController {
 
@@ -15,7 +17,9 @@ export class HTTPShopController {
 		try {
 			const {name} = req.body;
 
-			// TODO Validate name
+			const resultValidate = shopValidator.nameValidate(name)
+
+			if(!resultValidate.valid) return res.json({status: "error", errorText: resultValidate.errors.join(" ")});
 
 			const shop = this.shopService.create({name})
 			const token = authorizationService.createToken({id: shop.id})
@@ -46,3 +50,4 @@ export class HTTPShopController {
 		}
 	}
 }
+export const httpShopController = new HTTPShopController(shopService)

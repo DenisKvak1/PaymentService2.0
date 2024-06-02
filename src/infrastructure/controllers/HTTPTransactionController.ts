@@ -1,9 +1,12 @@
 import { TransactionRepository } from '../../core/repository/TransactionRepository';
-import { ShopService } from '../../core/services/ShopService';
+import { shopService, ShopService } from '../../core/services/ShopService';
 import * as express from 'express';
 import { IShop } from '../../core/models/Shop';
 import { bank } from '../modules/bank';
 import { TransactionSTATE } from '../../core/entity/interface/types';
+import { authorizationService } from '../modules/authorizationService';
+import { transactionValidator } from '../validators/TransactionValidator';
+import { transactionInRAMRepository } from '../database/repository/TransactionInRAMRepository';
 
 export class HTTPTransactionController {
 	constructor(
@@ -12,17 +15,24 @@ export class HTTPTransactionController {
 	) {
 	}
 
-	async create(req: express.Request, res: express.Response) {   /// TODO
+	async create(req: express.Request, res: express.Response) {
 		try {
-			const { shop_token, meta, sum } = req.body;
-			if (!({} as any).testToken(shop_token as any))
-				return res.json({
-					status: 'error',
-					errorText: 'Токен магазина не правильный',
-				});
+			const { meta, sum } = req.body;
+			const authorizationData = authorizationService.getData(req.headers['authorization']);
 
-			const shop = await this.shopService.getByToken(shop_token) as IShop;
-			const transaction = this.transactionRepository.create({ shop, sum, meta });
+			if(!transactionValidator.metaValidate(meta)) {
+				return res.json({
+					status: "error",
+					errorText: "Метаданные транзакции не валидны"
+				})
+			}
+
+			const shop = await this.shopService.getByID(authorizationData.id) as IShop;
+			const transaction = this.transactionRepository.create({
+				shop,
+				sum,
+				meta: { name: meta.name, description: meta.description },
+			});
 			res.json({ status: 'ok', transactionInfo: transaction.getInfo() });
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
@@ -31,7 +41,7 @@ export class HTTPTransactionController {
 
 	async getTransactionInfo(req: express.Request, res: express.Response) {
 		try {
-			const { transaction_id } = req.body;
+			const transaction_id = req.params.id;
 			const transaction = this.transactionRepository.getByID(transaction_id);
 
 			if (!transaction) {
@@ -49,7 +59,7 @@ export class HTTPTransactionController {
 
 	async getAvailableBanks(req: express.Request, res: express.Response) {
 		try {
-			const { transaction_id } = req.body;
+			const transaction_id = req.params.id;
 			const transaction = this.transactionRepository.getByID(transaction_id);
 
 			if (!transaction) {
@@ -146,3 +156,4 @@ export class HTTPTransactionController {
 		}
 	}
 }
+export const httpTransactionController = new HTTPTransactionController(transactionInRAMRepository, shopService)

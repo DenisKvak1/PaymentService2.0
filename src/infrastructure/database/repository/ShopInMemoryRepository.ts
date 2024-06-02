@@ -1,7 +1,7 @@
 import { ShopRepository } from '../../../core/repository/ShopRepository';
 import { CreateShopDTO, UpdateShopDTO } from '../../../core/repository/DTO/shopRepositoryDTO';
 import { IShop } from '../../../core/models/Shop';
-import { IJSONController } from '../../modules/JSONController';
+import { IJSONController, JSONControllerImpl } from '../../modules/JSONController';
 import { v4 as uuidv4 } from 'uuid';
 
 export class ShopInMemoryRepository implements ShopRepository {
@@ -48,3 +48,4 @@ export class ShopInMemoryRepository implements ShopRepository {
 		}
 	}
 }
+export const shopInMemoryRepository = new ShopInMemoryRepository(JSONControllerImpl)

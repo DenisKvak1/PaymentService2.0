@@ -22,3 +22,4 @@ export class TransactionInRAMRepository implements TransactionRepository {
 		return this.transactions.find((item) => item.id = id);
 	}
 }
+export const transactionInRAMRepository = new TransactionInRAMRepository()
