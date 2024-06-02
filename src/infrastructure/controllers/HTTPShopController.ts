@@ -40,8 +40,9 @@ export class HTTPShopController {
 					return await requisitesValidator.validateCardRequisites(connection, requisite)
 				}
 			}
-			const isValid = bank[bankType](requisites)
-			if(!isValid) res.json({status: "Error", errorText: "Реквезиты не корректны"})
+
+			const isValid = await banks[bankType](requisites)
+			if(!isValid) return res.json({status: "Error", errorText: "Реквезиты не корректны"})
 			this.shopService.setRequisites(authorizationData.id, bankType, requisites)
 
 			res.json({status: "ok"})

@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { authorizationData } from '../../../env/types';
+import { config } from '../../../env/config';
 
 export class AuthorizationService {
 	constructor(private readonly verificationCode: string) {}
@@ -20,4 +21,4 @@ export class AuthorizationService {
 		return jwt.verify(token, this.verificationCode) as authorizationData;
 	};
 }
-export const authorizationService = new AuthorizationService(process.env.VERIFICATION_CODE);
+export const authorizationService = new AuthorizationService(config.VERIFICATION_CODE);

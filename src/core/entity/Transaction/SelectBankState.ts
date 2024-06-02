@@ -16,6 +16,8 @@ export class SELECT_BANK_STATE extends TransactionSTATEClass {
 	}
 
 	selectBank(connection: IConnection): void {
+		const includeBank = Object.keys(this.transaction.shop.requisites).includes(connection.getName())
+		if(!includeBank) return
 		this.transaction.bank = connection;
 	}
 

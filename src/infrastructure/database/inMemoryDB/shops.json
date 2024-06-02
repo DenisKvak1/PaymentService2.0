@@ -1,1 +1,33 @@
-[]
+[
+  {
+    "id": "1732abfd-334b-4574-8f70-237799c6ac1f",
+    "name": "superCompany"
+  },
+  {
+    "id": "31cfcabb-ec22-4223-ba49-3f71ed1308d0",
+    "name": "superCompany"
+  },
+  {
+    "id": "e3dd9c28-635c-4545-baf1-79d2a053576a",
+    "name": "superCompany"
+  },
+  {
+    "id": "2b675b67-5295-4cae-93a7-0e2121814885",
+    "name": "superCompany"
+  },
+  {
+    "id": "55fc663b-60bb-4f53-bb89-7deab17b785f",
+    "name": "superCompany"
+  },
+  {
+    "id": "f13f42a8-dd77-4bf2-bd07-a0687afe8644",
+    "name": "superCompany",
+    "requisites": {
+      "myBank": {
+        "number": 4709370599857037,
+        "cvv2": 123,
+        "date": "05/25"
+      }
+    }
+  }
+]

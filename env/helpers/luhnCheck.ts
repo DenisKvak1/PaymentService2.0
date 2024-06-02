@@ -1,4 +1,4 @@
-function luhnCheck(cardNumber: string): boolean {
+export function luhnCheck(cardNumber: string): boolean {
 	const digits = cardNumber.split('').map(Number);
 	digits.reverse();
 	let sum = 0;
