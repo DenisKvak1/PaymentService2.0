@@ -1,4 +1,4 @@
-import { ICardRequisites, IConnection, IShop, Meta } from '../../../../env/types';
+import { ICardRequisites, IConnection, iObservable, IShop, Meta } from '../../../../env/types';
 
 export type ITransaction = {
 	id: string
@@ -7,13 +7,14 @@ export type ITransaction = {
 	meta: Meta
 	sum: number
 	bank: IConnection
-	getAvailableBanks(): string[]
+	delete$: iObservable<null>
+	getAvailableBanks(): Promise<string[]>
 	getInfo(): TransactionInfo
-	selectBank(connection: IConnection): void
+	selectBank(connection: IConnection): Promise<boolean>
 	cancelTransaction(): void
 	goToRequisites(): void
 	backToSelectBank(): void
-	confirmPayment(requisites: ICardRequisites): boolean | void
+	confirmPayment(requisites: ICardRequisites): Promise<boolean>
 	confirmTransaction(): void
 	destroy(): void
 }
@@ -23,8 +24,9 @@ export enum TransactionSTATE {
 	SELECT_BANK_STATE = 'SELECT_BANK_STATE',
 	WAITING_FOR_REQUISITES_STATE = 'WAITING_FOR_REQUISITES_STATE',
 	WAITING_CONFIRMATION_STATE = 'WAITING_CONFIRMATION_STATE',
-	FINISHED_STATE = 'FINISHED_STATE',
-	DELETED_STATE = 'DELETED__STATE'
+	FINISHED_SUCCESS_STATE = 'FINISHED_SUCCESS_STATE',
+	FINISHED_REJECT_STATE = 'FINISHED_REJECT_STATE',
+	DELETED_STATE = 'DELETED_STATE'
 }
 
 export type TransactionInfo = {
@@ -40,7 +42,7 @@ export abstract class TransactionSTATEClass {
 		this.transaction = transaction;
 	}
 
-	abstract selectBank(connection: IConnection): void
+	abstract selectBank(connection: IConnection): Promise<boolean>
 
 	abstract cancelTransaction(): void
 
@@ -48,7 +50,7 @@ export abstract class TransactionSTATEClass {
 
 	abstract backToSelectBank(): void
 
-	abstract confirmPayment(requisites: ICardRequisites): Promise<boolean | void>
+	abstract confirmPayment(requisites: ICardRequisites): Promise<boolean>
 
 	abstract confirmTransaction(): void
 

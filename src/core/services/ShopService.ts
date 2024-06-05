@@ -1,13 +1,13 @@
 import { IShopService } from './interface/types';
 import { CreateShopDTO } from '../repository/DTO/shopRepositoryDTO';
-import { ShopRepository } from '../repository/ShopRepository';
+import { IShopRepository } from '../repository/IShopRepository';
 import { IShop } from '../models/Shop';
 import { shopInMemoryRepository } from '../../infrastructure/database/repository/ShopInMemoryRepository';
 
 export class ShopService implements IShopService {
-	private shopRepository: ShopRepository;
+	private shopRepository: IShopRepository;
 
-	constructor(shopRepository: ShopRepository) {
+	constructor(shopRepository: IShopRepository) {
 		this.shopRepository = shopRepository;
 	}
 

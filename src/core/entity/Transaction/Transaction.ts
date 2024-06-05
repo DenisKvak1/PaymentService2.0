@@ -1,6 +1,8 @@
 import { ITransaction, TransactionInfo, TransactionSTATEClass } from '../interface/types';
 import { SELECT_BANK_STATE } from './SelectBankState';
-import { ICardRequisites, IConnection, IShop, Meta } from '../../../../env/types';
+import { ICardRequisites, IConnection, iObservable, IShop, Meta } from '../../../../env/types';
+import { bankHelper } from '../../../infrastructure/modules/bankHelper';
+import { Observable } from '../../../../env/helpers/observable';
 
 export class Transaction implements ITransaction {
 	id: string;
@@ -9,6 +11,7 @@ export class Transaction implements ITransaction {
 	shop: IShop;
 	state: TransactionSTATEClass;
 	sum: number;
+	delete$ = new Observable<null>()
 
 	constructor(id: string, shop: IShop, meta: Meta, sum: number) {
 		this.id = id;
@@ -20,6 +23,7 @@ export class Transaction implements ITransaction {
 	}
 
 	destroy(): void {
+		this.delete$.next()
 		this.state.destroy();
 	}
 
@@ -31,8 +35,8 @@ export class Transaction implements ITransaction {
 		this.state.cancelTransaction();
 	}
 
-	confirmPayment(requisites: ICardRequisites): void {
-		this.state.confirmPayment(requisites);
+	confirmPayment(requisites: ICardRequisites): Promise<boolean> {
+		return this.state.confirmPayment(requisites);
 	}
 
 	confirmTransaction(): void {
@@ -44,14 +48,20 @@ export class Transaction implements ITransaction {
 		this.state.goToRequisites();
 	}
 
-	selectBank(connection: IConnection): void {
-		this.state.selectBank(connection);
+	selectBank(connection: IConnection): Promise<boolean> {
+		return this.state.selectBank(connection);
 	}
 
-	getAvailableBanks(): string[] {
+	async getAvailableBanks(): Promise<string[]> {
 		const availableBanks: string[] = [];
 		for (const key in this.shop.requisites) {
-			if (this.shop.requisites[key]) availableBanks.push(key);
+			if (this.shop.requisites[key]) {
+				const connection = bankHelper.getBankConnectionByName(key);
+				if(!connection) continue
+				const isPinged = await connection.ping();
+				if (!isPinged) continue
+				availableBanks.push(key);
+			}
 		}
 		return availableBanks;
 	}

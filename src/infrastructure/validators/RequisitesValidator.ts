@@ -3,12 +3,18 @@ import { luhnCheck } from '../../../env/helpers/luhnCheck';
 import { stringCardToDateObject } from '../../../env/helpers/stringCardDateToObject';
 
 export class RequisitesValidator {
-	async validateCardRequisites(connection: IConnection, requisites: ICardRequisites){
-		if (stringCardToDateObject(requisites.date).getTime() < Date.now()) return false;
-		if(requisites.cvv2 < 100 || requisites.cvv2 > 999) return false
-		if(!luhnCheck(requisites.number.toString())) return false
+	async validateCardRequisites(requisites: ICardRequisites) {
+		const errors: string[] = [];
 
-		return await connection.isValidRequisites(requisites)
+		if (stringCardToDateObject(requisites.date).getTime() < Date.now()) errors.push('Карта просроченна');
+		if (requisites.cvv2 < 100 || requisites.cvv2 > 999) errors.push('Данные cvv2 не валидны');
+		if (!luhnCheck(requisites.number.toString())) errors.push('Данные карты не валидны');
+
+		return {
+			valid: errors.length === 0,
+			errors: errors,
+		};
 	}
 }
-export const requisitesValidator = new RequisitesValidator()
+
+export const requisitesValidator = new RequisitesValidator();

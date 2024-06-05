@@ -2,13 +2,13 @@ import { TransactionSTATE, TransactionSTATEClass } from '../interface/types';
 import { DELETED_STATE } from './DeletedState';
 import { ICardRequisites, IConnection } from '../../../../env/types';
 
-export class FINISHED_STATE extends TransactionSTATEClass {
+export class FINISHED_SUCCESS_STATE extends TransactionSTATEClass {
 	destroy(): void {
 		this.transaction.state = new DELETED_STATE(this.transaction);
 	}
 
 	getName(): TransactionSTATE {
-		return TransactionSTATE.FINISHED_STATE;
+		return TransactionSTATE.FINISHED_SUCCESS_STATE;
 	}
 
 	backToSelectBank(): void {
@@ -17,7 +17,8 @@ export class FINISHED_STATE extends TransactionSTATEClass {
 	cancelTransaction(): void {
 	}
 
-	async confirmPayment(requisites: ICardRequisites): Promise<boolean | void> {
+	async confirmPayment(requisites: ICardRequisites): Promise<boolean> {
+		return false;
 	}
 
 	confirmTransaction(): void {
@@ -27,7 +28,7 @@ export class FINISHED_STATE extends TransactionSTATEClass {
 	goToRequisites(): void {
 	}
 
-	selectBank(connection: IConnection): void {
+	async selectBank(connection: IConnection): Promise<boolean> {
+		return false;
 	}
-
 }

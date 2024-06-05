@@ -12,20 +12,25 @@ export class SELECT_BANK_STATE extends TransactionSTATEClass {
 
 
 	goToRequisites(): void {
+		if(!this.transaction.bank) return
 		this.transaction.state = new WAITING_FOR_REQUISITES_STATE(this.transaction);
 	}
 
-	selectBank(connection: IConnection): void {
-		const includeBank = Object.keys(this.transaction.shop.requisites).includes(connection.getName())
-		if(!includeBank) return
+	async selectBank(connection: IConnection): Promise<boolean> {
+		const banks =  await this.transaction.getAvailableBanks()
+		const includeBank = banks.includes(connection.getName())
+
+		if(!includeBank) return false
 		this.transaction.bank = connection;
+		return true
 	}
 
 	getName(): TransactionSTATE {
 		return TransactionSTATE.SELECT_BANK_STATE;
 	}
 
-	async confirmPayment(requisites: ICardRequisites): Promise<boolean | void> {
+	async confirmPayment(requisites: ICardRequisites): Promise<boolean> {
+		return false
 	}
 
 	confirmTransaction(): void {

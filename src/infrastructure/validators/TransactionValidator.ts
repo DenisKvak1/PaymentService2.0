@@ -1,25 +1,30 @@
 export class TransactionValidator {
-	metaValidate(meta: any): boolean {
-		if (typeof meta !== 'object') return false;
-		if (!meta.name) return false;
-		if (!meta.description) return false;
-		if (typeof meta.name !== 'string') return false;
-		if (typeof meta.description !== 'string') return false;
+	metaValidate(meta: any) {
+		const errors: string[] = [];
+
+		if (typeof meta !== 'object') return {valid: false, errors: ['Мета - не обьект']};
+		if (!meta.name) return {valid: false, errors: ['Название не предоставленно']};
+		if (!meta.description) return {valid: false, errors: ['Описание не предоставленно']};
+		if (typeof meta.name !== 'string') return {valid: false, errors: ['Название - не строка']};
+		if (typeof meta.description !== 'string') return {valid: false, errors: ['Описание не строка']};
 
 		const resultNicknameValidate = this.metaNameValidate(meta.name);
 		const resultDescriptionValidate = this.metaDescriptionValidate(meta.description);
 
-		if (!resultNicknameValidate) return false;
-		if (!resultDescriptionValidate) return false;
+		if (!resultNicknameValidate) errors.push('Никнем не валиден');
+		if (!resultDescriptionValidate) errors.push('Описание не валидно');
 
-		return true;
+		return {
+			valid: errors.length === 0,
+			errors: errors,
+		};
 	}
 
 	private metaNameValidate(name: string) {
 		const minLength = 3;
 		const maxLength = 16;
 
-		const validCharacters = /^[a-zA-Z0-9_-]+$/;
+		const validCharacters = /^[\p{L}\p{N}_-]+$/u;
 
 		const isLengthValid = name.length >= minLength && name.length <= maxLength;
 		const hasValidCharacters = validCharacters.test(name);
@@ -34,7 +39,7 @@ export class TransactionValidator {
 
 		const isLengthValid = description.length >= minLength && description.length <= maxLength;
 
-		const forbiddenCharacters = /[^a-zA-Z0-9 .,!?'"()-]/;
+		const forbiddenCharacters = /[^\p{L}\p{N} .,!?'"()-]/u;
 		const hasValidCharacters = !forbiddenCharacters.test(description);
 
 		return isLengthValid && hasValidCharacters;

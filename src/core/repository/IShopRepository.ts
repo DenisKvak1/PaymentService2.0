@@ -1,7 +1,7 @@
 import { IShop } from '../models/Shop';
 import { CreateShopDTO, UpdateShopDTO } from './DTO/shopRepositoryDTO';
 
-export type ShopRepository = {
+export type IShopRepository = {
 	create(dto: CreateShopDTO): IShop
 	getByID(id: string): undefined | IShop
 	getAll(): IShop[]

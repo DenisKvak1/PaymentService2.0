@@ -1,7 +1,7 @@
 import { myBankConnection } from '../bankConnections/MyBankConnection';
 import { IConnection } from '../../../env/types';
 
-export class Bank {
+export class BankHelper {
 	getBankConnectionByName(name: string): IConnection | undefined {
 		switch (name) {
 			case 'myBank':
@@ -12,4 +12,4 @@ export class Bank {
 	}
 }
 
-export const bank = new Bank();
+export const bankHelper = new BankHelper();

@@ -30,7 +30,7 @@ export class ExpressApp {
 
 	private setupRoutes() {
 		this.app.use('/shop', shopRouter);
-		this.app.use('/transactions', transactionRouter, );
+		this.app.use('/transaction', transactionRouter, );
 	}
 
 	start(port: number) {

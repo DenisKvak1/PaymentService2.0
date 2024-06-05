@@ -29,5 +29,14 @@
         "date": "05/25"
       }
     }
+  },
+  {
+    "id": "a317d1b8-82f2-4005-b293-89d63269799f",
+    "name": "ultraCompany",
+    "requisites": {
+      "myBank": {
+        "number": 4275823187499707
+      }
+    }
   }
 ]

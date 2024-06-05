@@ -1,16 +1,16 @@
-import { ShopRepository } from '../../../core/repository/ShopRepository';
+import { IShopRepository } from '../../../core/repository/IShopRepository';
 import { CreateShopDTO, UpdateShopDTO } from '../../../core/repository/DTO/shopRepositoryDTO';
 import { IShop } from '../../../core/models/Shop';
 import { IJSONController, JSONControllerImpl } from '../../modules/JSONController';
 import { v4 as uuidv4 } from 'uuid';
 
-export class ShopInMemoryRepository implements ShopRepository {
+export class ShopInMemoryRepository implements IShopRepository {
 	constructor(private JSONController: IJSONController) {
 	}
 
 	create(dto: CreateShopDTO): IShop {
 		const shops: IShop[] = this.JSONController.loadJSON();
-		const createShop = { id: uuidv4(), name: dto.name, requisites: dto.requisites } as IShop;
+		const createShop = { id: uuidv4(), name: dto.name, requisites: dto.requisites || {}} as IShop;
 		shops.push(createShop);
 		this.JSONController.saveJSON(shops);
 		return createShop;
