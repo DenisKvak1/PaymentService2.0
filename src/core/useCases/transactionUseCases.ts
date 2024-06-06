@@ -13,6 +13,12 @@ export class TransactionUseCases implements ITransactionUseCases {
 
 	backToSelectBank(id: string): TransactionDoInfo {
 		const transaction = this.transactionService.getByID(id);
+		if(!transaction){
+			return {
+				success: false,
+				error: 'Транзакция не найденна',
+			};
+		}
 		if (transaction.state !== TransactionSTATE.WAITING_FOR_REQUISITES_STATE) {
 			return {
 				success: false,
@@ -25,6 +31,12 @@ export class TransactionUseCases implements ITransactionUseCases {
 
 	cancelTransaction(id: string): TransactionDoInfo {
 		const transaction = this.transactionService.getByID(id);
+		if(!transaction){
+			return {
+				success: false,
+				error: 'Транзакция не найденна',
+			};
+		}
 		if (
 			transaction.state === TransactionSTATE.DELETED_STATE ,
 			transaction.state === TransactionSTATE.FINISHED_REJECT_STATE,
@@ -41,6 +53,12 @@ export class TransactionUseCases implements ITransactionUseCases {
 
 	async confirmPayment(id: string, requisites: ICardRequisites): Promise<TransactionDoInfo> {
 		const transaction = this.transactionService.getByID(id);
+		if(!transaction){
+			return {
+				success: false,
+				error: 'Транзакция не найденна',
+			};
+		}
 		if(transaction.state !== TransactionSTATE.WAITING_FOR_REQUISITES_STATE) {
 			return {
 				success: false,
@@ -59,6 +77,12 @@ export class TransactionUseCases implements ITransactionUseCases {
 
 	confirmTransaction(id: string): TransactionDoInfo {
 		const transaction = this.transactionService.getByID(id);
+		if(!transaction){
+			return {
+				success: false,
+				error: 'Транзакция не найденна',
+			};
+		}
 		if (transaction.state !== TransactionSTATE.WAITING_CONFIRMATION_STATE) {
 			return {
 				success: false,
@@ -89,8 +113,14 @@ export class TransactionUseCases implements ITransactionUseCases {
 		return this.transactionService.isExist(id);
 	}
 
-	selectBank(id: string, connection: IConnection): Promise<TransactionDoInfo> {
+	async selectBank(id: string, connection: IConnection): Promise<TransactionDoInfo> {
 		const transaction = this.transactionService.getByID(id);
+		if(!transaction){
+			return {
+				success: false,
+				error: 'Транзакция не найденна',
+			};
+		}
 		const stateFunctions: { [key in TransactionSTATE]: Function } = {
 			[TransactionSTATE.SELECT_BANK_STATE]: async () => {
 				const banks = await transactionService.getAvailableBanks(id);

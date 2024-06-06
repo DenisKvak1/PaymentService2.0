@@ -6,7 +6,6 @@ import { authorizationService } from '../modules/authorizationService';
 import { transactionValidator } from '../validators/TransactionValidator';
 import { requisitesValidator } from '../validators/RequisitesValidator';
 import { IShopService } from '../../core/services/interface/types';
-import { TransactionSTATE } from '../../core/models/Transaction';
 import { ITransactionUseCases } from '../../core/useCases/interfaces/transaction';
 import { transactionUseCases } from '../../core/useCases/transactionUseCases';
 
@@ -67,14 +66,6 @@ export class HTTPTransactionController {
 	async getAvailableBanks(req: express.Request, res: express.Response) {
 		try {
 			const transaction_id = req.params.id;
-			const isTransactionExist = this.transactionUseCases.isExist(transaction_id);
-
-			if (!isTransactionExist) {
-				return res.json({
-					status: 'error',
-					errorText: 'Транзакция не найденна',
-				});
-			}
 
 			res.json({
 				status: 'ok',
@@ -88,14 +79,6 @@ export class HTTPTransactionController {
 	async selectBank(req: express.Request, res: express.Response) {
 		try {
 			const { transaction_id, bank_name } = req.body;
-			const isTransactionExist = this.transactionUseCases.isExist(transaction_id);
-
-			if (!isTransactionExist) {
-				return res.json({
-					status: 'error',
-					errorText: 'Транзакция не найденна',
-				});
-			}
 			if (!bankHelper.getBankConnectionByName(bank_name)) {
 				return res.json({
 					status: 'error',
@@ -119,15 +102,6 @@ export class HTTPTransactionController {
 	async confirmPayment(req: express.Request, res: express.Response) {
 		try {
 			const { transaction_id, requisites } = req.body;
-			const isTransactionExist = this.transactionUseCases.isExist(transaction_id);
-
-			if (!isTransactionExist) {
-				return res.json({
-					status: 'error',
-					errorText: 'Транзакция не найденна',
-				});
-			}
-
 			if (!await requisitesValidator.validateCardRequisites(requisites)) {
 				return res.json({
 					status: 'error',
@@ -136,7 +110,7 @@ export class HTTPTransactionController {
 			}
 			const transactionDoInfo = await this.transactionUseCases.confirmPayment(transaction_id, requisites);
 
-			if (!transactionDoInfo.success) return res.json({ status: 'error', errorText: transactionDoInfo.error});
+			if (!transactionDoInfo.success) return res.json({ status: 'error', errorText: transactionDoInfo.error });
 
 			res.json({ status: 'ok' });
 		} catch (e) {
@@ -147,17 +121,9 @@ export class HTTPTransactionController {
 	cancel(req: express.Request, res: express.Response) {
 		try {
 			const { transaction_id } = req.body;
-			const isTransactionExist = this.transactionUseCases.isExist(transaction_id);
-
-			if (!isTransactionExist) {
-				return res.json({
-					status: 'error',
-					errorText: 'Транзакция не найденна',
-				});
-			}
 
 			const transactionDoInfo = this.transactionUseCases.cancelTransaction(transaction_id);
-			if(!transactionDoInfo.success){
+			if (!transactionDoInfo.success) {
 				return res.json({
 					status: 'error',
 					errorText: transactionDoInfo.error,
