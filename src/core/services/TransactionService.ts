@@ -7,7 +7,7 @@ import { CreateTransactionDTO } from '../repository/DTO/transactionDTO';
 import { transactionInRAMRepository } from '../../infrastructure/database/repository/TransactionInRAMRepository';
 import { ITransactionService } from './interface/types';
 
-export class TransactionService implements ITransactionService{
+export class TransactionService implements ITransactionService {
 	constructor(
 		private transactionRepository: ITransactionRepository,
 	) {
@@ -41,15 +41,11 @@ export class TransactionService implements ITransactionService{
 		};
 	}
 
-	async selectBank(id: string, connection: IConnection): Promise<boolean> {
-		this.transactionRepository.update(id, { bank: connection });
-
-		const banks =  await this.getAvailableBanks(id)
-		const includeBank = banks.includes(connection.getName())
-
-		if(!includeBank) return false
-		this.transactionRepository.update(id, { bank: connection, state: TransactionSTATE.WAITING_FOR_REQUISITES_STATE});
-		return true
+	async selectBank(id: string, connection: IConnection): Promise<void> {
+		this.transactionRepository.update(id, {
+			bank: connection,
+			state: TransactionSTATE.WAITING_FOR_REQUISITES_STATE,
+		});
 	}
 
 	cancelTransaction(id: string): void {
@@ -86,7 +82,7 @@ export class TransactionService implements ITransactionService{
 				this.destroy(id);
 			}
 		}, config.TIMEOUT_EXPIRED);
-		this.transactionRepository.update(id, {state: TransactionSTATE.WAITING_CONFIRMATION_STATE})
+		this.transactionRepository.update(id, { state: TransactionSTATE.WAITING_CONFIRMATION_STATE });
 		return true;
 	}
 
@@ -99,8 +95,13 @@ export class TransactionService implements ITransactionService{
 		this.transactionRepository.delete(id);
 	}
 
+	getByID(id: string): ITransaction | undefined {
+		return this.transactionRepository.getByID(id);
+	}
+
 	isExist(id: string): boolean {
 		return Boolean(this.transactionRepository.getByID(id));
 	}
 }
-export const transactionService = new TransactionService(transactionInRAMRepository)
+
+export const transactionService = new TransactionService(transactionInRAMRepository);

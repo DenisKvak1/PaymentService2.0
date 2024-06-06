@@ -15,11 +15,12 @@ export type ITransactionService = {
 	create(dto: CreateTransactionDTO): ITransaction
 	getAvailableBanks(id: string): Promise<string[]>
 	getInfo(id: string): TransactionInfo
-	selectBank(id: string, connection: IConnection): Promise<boolean>
+	selectBank(id: string, connection: IConnection): Promise<void>
 	cancelTransaction(id: string): void
 	backToSelectBank(id: string): void
 	confirmPayment(id: string, requisites: ICardRequisites): Promise<boolean>
 	confirmTransaction(id: string): void
 	destroy(id: string): void
+	getByID(id: string): ITransaction | undefined
 	isExist(id: string): boolean
 }
