@@ -1,5 +1,8 @@
 import { CreateShopDTO } from '../../repository/DTO/shopRepositoryDTO';
 import { IShop } from '../../models/Shop';
+import { ICardRequisites, IConnection } from '../../../../env/types';
+import { CreateTransactionDTO } from '../../repository/DTO/transactionDTO';
+import { ITransaction, TransactionInfo } from '../../models/Transaction';
 
 export type IShopService = {
 	create(dto: CreateShopDTO): IShop
@@ -7,4 +10,16 @@ export type IShopService = {
 	getByID(id: string): Promise<IShop | undefined>
 	setRequisites(id: string, bankType: string, requisites: number | string): void
 	delete(id: string): void
+}
+export type ITransactionService = {
+	create(dto: CreateTransactionDTO): ITransaction
+	getAvailableBanks(id: string): Promise<string[]>
+	getInfo(id: string): TransactionInfo
+	selectBank(id: string, connection: IConnection): Promise<boolean>
+	cancelTransaction(id: string): void
+	backToSelectBank(id: string): void
+	confirmPayment(id: string, requisites: ICardRequisites): Promise<boolean>
+	confirmTransaction(id: string): void
+	destroy(id: string): void
+	isExist(id: string): boolean
 }

@@ -1,18 +1,17 @@
-import { ITransactionRepository } from '../../core/repository/ITransactionRepository';
 import { shopService } from '../../core/services/ShopService';
 import * as express from 'express';
 import { IShop } from '../../core/models/Shop';
 import { bankHelper } from '../modules/bankHelper';
-import { TransactionSTATE } from '../../core/entity/interface/types';
 import { authorizationService } from '../modules/authorizationService';
 import { transactionValidator } from '../validators/TransactionValidator';
-import { transactionInRAMRepository } from '../database/repository/TransactionInRAMRepository';
 import { requisitesValidator } from '../validators/RequisitesValidator';
-import { IShopService } from '../../core/services/interface/types';
+import { IShopService, ITransactionService } from '../../core/services/interface/types';
+import { transactionService } from '../../core/services/TransactionService';
+import { TransactionSTATE } from '../../core/models/Transaction';
 
 export class HTTPTransactionController {
 	constructor(
-		private transactionRepository: ITransactionRepository,
+		private transactionService: ITransactionService,
 		private shopService: IShopService,
 	) {
 	}
@@ -31,14 +30,16 @@ export class HTTPTransactionController {
 			}
 
 			const shop = await this.shopService.getByID(authorizationData.id) as IShop;
-			const transaction = this.transactionRepository.create({
+			const transaction = this.transactionService.create({
 				shop,
 				sum,
 				meta: { name: meta.name, description: meta.description },
 			});
-			transaction.delete$.subscribe(() => setTimeout(() => this.transactionRepository.delete(transaction.id)));
 
-			res.json({ status: 'ok', transactionInfo: { id: transaction.id, ...transaction.getInfo() } });
+			res.json({
+				status: 'ok',
+				transactionInfo: { id: transaction.id, ...this.transactionService.getInfo(transaction.id) },
+			});
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
 		}
@@ -47,7 +48,7 @@ export class HTTPTransactionController {
 	async getTransactionInfo(req: express.Request, res: express.Response) {
 		try {
 			const transaction_id = req.params.id;
-			const transaction = this.transactionRepository.getByID(transaction_id);
+			const transaction = this.transactionService.isExist(transaction_id);
 			if (!transaction) {
 				return res.json({
 					status: 'error',
@@ -55,43 +56,29 @@ export class HTTPTransactionController {
 				});
 			}
 
-			res.json({ status: 'ok', transactionInfo: transaction.getInfo() });
+			res.json({ status: 'ok', transactionInfo: this.transactionService.getInfo(transaction_id) });
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
 		}
 	}
 
-	async goToRequisites(req: express.Request, res: express.Response) {
-		try {
-			const transaction_id = req.params.id;
-			const transaction = this.transactionRepository.getByID(transaction_id);
-
-			if (!transaction) {
-				return res.json({
-					status: 'error',
-					errorText: 'Транзакция не найденна',
-				});
-			}
-			transaction.goToRequisites();
-			res.json({ status: 'ok' });
-		} catch (e) {
-			res.json({ status: 'error', errorText: e.message });
-		}
-	}
 
 	async getAvailableBanks(req: express.Request, res: express.Response) {
 		try {
 			const transaction_id = req.params.id;
-			const transaction = this.transactionRepository.getByID(transaction_id);
+			const isTransactionExist = this.transactionService.isExist(transaction_id);
 
-			if (!transaction) {
+			if (!isTransactionExist) {
 				return res.json({
 					status: 'error',
 					errorText: 'Транзакция не найденна',
 				});
 			}
 
-			res.json({ status: 'ok', availableBanks: await transaction.getAvailableBanks() || [] });
+			res.json({
+				status: 'ok',
+				availableBanks: await this.transactionService.getAvailableBanks(transaction_id) || [],
+			});
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
 		}
@@ -100,10 +87,10 @@ export class HTTPTransactionController {
 	async selectBank(req: express.Request, res: express.Response) {
 		try {
 			const { transaction_id, bank_name } = req.body;
-			const transaction = this.transactionRepository.getByID(transaction_id);
-			const state = transaction?.getInfo()?.state;
+			const isTransactionExist = this.transactionService.isExist(transaction_id);
+			const state = this.transactionService.getInfo(transaction_id)?.state;
 
-			if (!transaction) {
+			if (!isTransactionExist) {
 				return res.json({
 					status: 'error',
 					errorText: 'Транзакция не найденна',
@@ -121,7 +108,7 @@ export class HTTPTransactionController {
 					errorText: 'Банк уже выбран',
 				});
 			}
-			const isOKSelectBank = await transaction.selectBank(bankHelper.getBankConnectionByName(bank_name));
+			const isOKSelectBank = await this.transactionService.selectBank(transaction_id, bankHelper.getBankConnectionByName(bank_name));
 			if (!isOKSelectBank) {
 				return res.json({
 					status: 'error',
@@ -138,13 +125,19 @@ export class HTTPTransactionController {
 	async confirmPayment(req: express.Request, res: express.Response) {
 		try {
 			const { transaction_id, requisites } = req.body;
-			const transaction = this.transactionRepository.getByID(transaction_id);
-			const state = transaction?.getInfo()?.state;
+			const isTransactionExist = this.transactionService.isExist(transaction_id);
+			const state = this.transactionService.getInfo(transaction_id)?.state;
 
-			if (!transaction) {
+			if (!isTransactionExist) {
 				return res.json({
 					status: 'error',
 					errorText: 'Транзакция не найденна',
+				});
+			}
+			if (state === TransactionSTATE.SELECT_BANK_STATE) {
+				return res.json({
+					status: 'error',
+					errorText: 'Банк не выбран',
 				});
 			}
 			if (state !== TransactionSTATE.WAITING_FOR_REQUISITES_STATE) {
@@ -159,7 +152,7 @@ export class HTTPTransactionController {
 					errorText: 'Реквезиты не корретные',
 				});
 			}
-			const isOk = await transaction.confirmPayment(requisites);
+			const isOk = await this.transactionService.confirmPayment(transaction_id, requisites);
 
 			if (!isOk) return res.json({ status: 'error', errorText: 'Реквезиты не корректны' });
 
@@ -172,9 +165,10 @@ export class HTTPTransactionController {
 	cancel(req: express.Request, res: express.Response) {
 		try {
 			const { transaction_id } = req.body;
-			const transaction = this.transactionRepository.getByID(transaction_id);
-			const state = transaction?.getInfo()?.state;
-			if (!transaction) {
+			const isTransactionExist = this.transactionService.isExist(transaction_id);
+			const state = this.transactionService.getInfo(transaction_id)?.state;
+
+			if (!isTransactionExist) {
 				return res.json({
 					status: 'error',
 					errorText: 'Транзакция не найденна',
@@ -186,7 +180,7 @@ export class HTTPTransactionController {
 					errorText: 'Транзакция уже выполненна',
 				});
 			}
-			transaction.cancelTransaction();
+			this.transactionService.cancelTransaction(transaction_id);
 			res.json({ status: 'ok' });
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
@@ -194,4 +188,4 @@ export class HTTPTransactionController {
 	}
 }
 
-export const httpTransactionController = new HTTPTransactionController(transactionInRAMRepository, shopService);
+export const httpTransactionController = new HTTPTransactionController(transactionService, shopService);
