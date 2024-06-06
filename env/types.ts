@@ -36,4 +36,8 @@ export type IShop = {
 	name: string
 	requisites: IRequisites
 }
+export type TransactionDoInfo = {
+	success: boolean,
+	error: string
+}
 export type ISubscribe = { unsubscribe: () => void }

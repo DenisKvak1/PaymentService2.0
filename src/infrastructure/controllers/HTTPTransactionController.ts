@@ -109,11 +109,11 @@ export class HTTPTransactionController {
 					errorText: 'Банк уже выбран',
 				});
 			}
-			const isOKSelectBank = await this.transactionService.selectBank(transaction_id, bankHelper.getBankConnectionByName(bank_name));
-			if (!isOKSelectBank) {
+			const doInfo = await this.transactionService.selectBank(transaction_id, bankHelper.getBankConnectionByName(bank_name));
+			if (!doInfo.success) {
 				return res.json({
 					status: 'error',
-					errorText: 'Этот способ оплаты не доступен',
+					errorText: doInfo.error,
 				});
 			}
 			res.json({ status: 'ok' });
