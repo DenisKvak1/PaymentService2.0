@@ -88,7 +88,6 @@ export class HTTPTransactionController {
 		try {
 			const { transaction_id, bank_name } = req.body;
 			const isTransactionExist = this.transactionService.isExist(transaction_id);
-			const state = this.transactionService.getInfo(transaction_id)?.state;
 
 			if (!isTransactionExist) {
 				return res.json({
@@ -102,6 +101,8 @@ export class HTTPTransactionController {
 					errorText: 'Банк не найден',
 				});
 			}
+
+			const state = this.transactionService.getInfo(transaction_id)?.state;
 			if (state !== TransactionSTATE.SELECT_BANK_STATE) {
 				return res.json({
 					status: 'error',
