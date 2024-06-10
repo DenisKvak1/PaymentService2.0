@@ -73,9 +73,10 @@ export class ShopUseCases implements IShopUseCases{
 
 	async setRequisites(id: string, bankType: string, requisites: number | string): Promise<DoInfo> {
 		const shop = await this.shopService.getByID(id);
+		const connection = bankHelper.getBankConnectionByName('myBank');
+
 		const banks = {
 			myBank: async (requisite: number) => {
-				const connection = bankHelper.getBankConnectionByName('myBank');
 				if (!luhnCheck(requisite.toString())) return false;
 				if (!await connection.checkExistingRequisites(requisites.toString())) return false;
 				return true;
@@ -84,13 +85,18 @@ export class ShopUseCases implements IShopUseCases{
 
 		const bankFunction = banks[bankType];
 
-		if (typeof bankFunction !== 'function') {
+		if (!connection) {
 			return {
 				success: false,
 				error: 'Некорректный тип банка',
 			};
 		}
-
+		if(!await connection.ping()) {
+			return {
+				success: false,
+				error: 'Банк не работает, попробуйте позже'
+			}
+		}
 		const isValid = await bankFunction(requisites);
 
 		if (!shop) {

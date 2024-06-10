@@ -24,7 +24,7 @@ export class TransactionValidator {
 		const minLength = 3;
 		const maxLength = 16;
 
-		const validCharacters = /^[\p{L}\p{N}_-]+$/u;
+		const validCharacters = /^[a-zA-Z0-9_\s-]+$/;
 
 		const isLengthValid = name.length >= minLength && name.length <= maxLength;
 		const hasValidCharacters = validCharacters.test(name);

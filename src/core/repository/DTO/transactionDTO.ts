@@ -1,9 +1,13 @@
 import { IConnection, IShop, Meta } from '../../../../env/types';
 
 import { TransactionSTATE } from '../../models/Transaction';
-
-export type CreateTransactionDTO = {
+export type CreateUseCasesTransactionDTO = {
 	shopID: string,
+	meta: Meta,
+	sum: number
+}
+export type CreateTransactionDTO = {
+	shop: IShop,
 	meta: Meta,
 	sum: number
 }

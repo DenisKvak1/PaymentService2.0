@@ -2,21 +2,16 @@ import { ITransactionRepository } from '../../../core/repository/ITransactionRep
 import { CreateTransactionDTO, UpdateTransactionDTO } from '../../../core/repository/DTO/transactionDTO';
 import { v4 as uuidv4 } from 'uuid';
 import { ITransaction, TransactionSTATE } from '../../../core/models/Transaction';
-import { IShopRepository } from '../../../core/repository/IShopRepository';
 import { shopInMemoryRepository } from './ShopInMemoryRepository';
 
 export class TransactionInRAMRepository implements ITransactionRepository {
 	private readonly transactions: ITransaction[] = [];
-	private readonly shopRepository: IShopRepository;
 
-	constructor(shopRepository: IShopRepository) {
-		this.shopRepository = shopRepository;
-	}
 
 	create(dto: CreateTransactionDTO): ITransaction {
 		const transaction = {
 			id: uuidv4(),
-			shop: this.shopRepository.getByID(dto.shopID),
+			shop: dto.shop,
 			bank: null,
 			meta: dto.meta,
 			sum: dto.sum,
@@ -43,4 +38,4 @@ export class TransactionInRAMRepository implements ITransactionRepository {
 	}
 }
 
-export const transactionInRAMRepository = new TransactionInRAMRepository(shopInMemoryRepository);
+export const transactionInRAMRepository = new TransactionInRAMRepository();

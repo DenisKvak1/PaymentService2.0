@@ -1,15 +1,18 @@
 import { ITransactionUseCases } from './interfaces/transaction';
 import { DoInfo, ICardRequisites, IConnection } from '../../../env/types';
-import { CreateTransactionDTO } from '../repository/DTO/transactionDTO';
+import { CreateTransactionDTO, CreateUseCasesTransactionDTO } from '../repository/DTO/transactionDTO';
 import { TransactionSTATE } from '../models/Transaction';
-import { ITransactionService } from '../services/interface/types';
+import { IShopService, ITransactionService } from '../services/interface/types';
 import { transactionService } from '../services/TransactionService';
 import { requisitesValidator } from '../validators/RequisitesValidator';
 import { transactionValidator } from '../validators/TransactionValidator';
+import { shopService } from '../services/ShopService';
+import { checkNullObject } from '../../../env/helpers/checkNullObject';
 
 export class TransactionUseCases implements ITransactionUseCases {
 	constructor(
 		private transactionService: ITransactionService,
+		private shopService: IShopService,
 	) {
 	}
 
@@ -108,7 +111,7 @@ export class TransactionUseCases implements ITransactionUseCases {
 		return { success: true, error: '' };
 	}
 
-	create(dto: CreateTransactionDTO): DoInfo {
+	async create(dto: CreateUseCasesTransactionDTO): Promise<DoInfo> {
 		const validateResult = transactionValidator.metaValidate(dto.meta);
 		if (!validateResult.valid) {
 			return {
@@ -116,10 +119,17 @@ export class TransactionUseCases implements ITransactionUseCases {
 				error: validateResult.errors.join(' '),
 			};
 		}
+		const shop = await this.shopService.getByID(dto.shopID)
+		if(checkNullObject(shop.requisites)){
+			return {
+				success: false,
+				error: 'Реквезиты пусты'
+			}
+		}
 		return {
 			success: true,
 			error: '',
-			data: transactionService.create(dto),
+			data: transactionService.create({shop, meta: dto.meta, sum: dto.sum}),
 		};
 	}
 
@@ -211,4 +221,4 @@ export class TransactionUseCases implements ITransactionUseCases {
 	}
 }
 
-export const transactionUseCases = new TransactionUseCases(transactionService);
+export const transactionUseCases = new TransactionUseCases(transactionService, shopService);

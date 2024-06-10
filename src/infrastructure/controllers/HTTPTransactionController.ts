@@ -17,13 +17,13 @@ export class HTTPTransactionController {
 			const { meta, sum } = req.body;
 			const authorizationData = authorizationService.getData(req.headers['authorization']);
 
-			const transactionDoInfo = this.transactionUseCases.create({
+			const transactionDoInfo = await this.transactionUseCases.create({
 				shopID: authorizationData.id,
 				sum,
 				meta: { name: meta.name, description: meta.description },
 			});
 			if(!transactionDoInfo.success){
-				res.json({
+				return res.json({
 					status: 'error',
 					errorText: transactionDoInfo.error
 				})
