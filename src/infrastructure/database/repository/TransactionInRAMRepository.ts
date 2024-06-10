@@ -1,14 +1,27 @@
-import { ITransaction } from '../../../core/entity/interface/types';
 import { ITransactionRepository } from '../../../core/repository/ITransactionRepository';
-import { CreateTransactionDTO } from '../../../core/repository/DTO/transactionDTO';
-import { Transaction } from '../../../core/entity/Transaction/Transaction';
+import { CreateTransactionDTO, UpdateTransactionDTO } from '../../../core/repository/DTO/transactionDTO';
 import { v4 as uuidv4 } from 'uuid';
+import { ITransaction, TransactionSTATE } from '../../../core/models/Transaction';
+import { IShopRepository } from '../../../core/repository/IShopRepository';
+import { shopInMemoryRepository } from './ShopInMemoryRepository';
 
 export class TransactionInRAMRepository implements ITransactionRepository {
 	private readonly transactions: ITransaction[] = [];
+	private readonly shopRepository: IShopRepository;
+
+	constructor(shopRepository: IShopRepository) {
+		this.shopRepository = shopRepository;
+	}
 
 	create(dto: CreateTransactionDTO): ITransaction {
-		const transaction = new Transaction(uuidv4(), dto.shop, dto.meta, dto.sum);
+		const transaction = {
+			id: uuidv4(),
+			shop: this.shopRepository.getByID(dto.shopID),
+			bank: null,
+			meta: dto.meta,
+			sum: dto.sum,
+			state: TransactionSTATE.SELECT_BANK_STATE,
+		} as ITransaction;
 		this.transactions.push(transaction);
 		return transaction;
 	}
@@ -21,6 +34,13 @@ export class TransactionInRAMRepository implements ITransactionRepository {
 	getByID(id: string): ITransaction | undefined {
 		return this.transactions.find((item) => item.id === id);
 	}
+
+	update(id: string, dto: UpdateTransactionDTO): void {
+		const transaction = this.transactions.find((item) => item.id === id);
+		for (const key in dto) {
+			transaction[key] = dto[key];
+		}
+	}
 }
 
-export const transactionInRAMRepository = new TransactionInRAMRepository();
+export const transactionInRAMRepository = new TransactionInRAMRepository(shopInMemoryRepository);

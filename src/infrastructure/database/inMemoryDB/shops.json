@@ -38,5 +38,17 @@
         "number": 4275823187499707
       }
     }
+  },
+  {
+    "id": "00bbab75-75a3-4df7-9ed2-fd3848945a5e",
+    "name": "denis",
+    "requisites": {
+      "myBank": 1974770774676850
+    }
+  },
+  {
+    "id": "21d40a23-17c2-4d5d-be14-8c32280caf9b",
+    "name": "denis",
+    "requisites": {}
   }
 ]

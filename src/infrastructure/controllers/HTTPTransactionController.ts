@@ -1,19 +1,14 @@
-import { ITransactionRepository } from '../../core/repository/ITransactionRepository';
 import { shopService } from '../../core/services/ShopService';
 import * as express from 'express';
 import { IShop } from '../../core/models/Shop';
 import { bankHelper } from '../modules/bankHelper';
-import { TransactionSTATE } from '../../core/entity/interface/types';
 import { authorizationService } from '../modules/authorizationService';
-import { transactionValidator } from '../validators/TransactionValidator';
-import { transactionInRAMRepository } from '../database/repository/TransactionInRAMRepository';
-import { requisitesValidator } from '../validators/RequisitesValidator';
-import { IShopService } from '../../core/services/interface/types';
+import { ITransactionUseCases } from '../../core/useCases/interfaces/transaction';
+import { transactionUseCases } from '../../core/useCases/transactionUseCases';
 
 export class HTTPTransactionController {
 	constructor(
-		private transactionRepository: ITransactionRepository,
-		private shopService: IShopService,
+		private transactionUseCases: ITransactionUseCases,
 	) {
 	}
 
@@ -22,23 +17,21 @@ export class HTTPTransactionController {
 			const { meta, sum } = req.body;
 			const authorizationData = authorizationService.getData(req.headers['authorization']);
 
-			const metaValidateResult = transactionValidator.metaValidate(meta);
-			if (!metaValidateResult.valid) {
-				return res.json({
-					status: 'error',
-					errorText: metaValidateResult.errors.join(' '),
-				});
-			}
-
-			const shop = await this.shopService.getByID(authorizationData.id) as IShop;
-			const transaction = this.transactionRepository.create({
-				shop,
+			const transactionDoInfo = this.transactionUseCases.create({
+				shopID: authorizationData.id,
 				sum,
 				meta: { name: meta.name, description: meta.description },
 			});
-			transaction.delete$.subscribe(() => setTimeout(() => this.transactionRepository.delete(transaction.id)));
-
-			res.json({ status: 'ok', transactionInfo: { id: transaction.id, ...transaction.getInfo() } });
+			if(!transactionDoInfo.success){
+				res.json({
+					status: 'error',
+					errorText: transactionDoInfo.error
+				})
+			}
+			res.json({
+				status: 'ok',
+				transactionInfo: { id: transactionDoInfo.data.id, ...this.transactionUseCases.getInfo(transactionDoInfo.data.id).data },
+			});
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
 		}
@@ -47,51 +40,29 @@ export class HTTPTransactionController {
 	async getTransactionInfo(req: express.Request, res: express.Response) {
 		try {
 			const transaction_id = req.params.id;
-			const transaction = this.transactionRepository.getByID(transaction_id);
-			if (!transaction) {
+			const transactionDoInfo = this.transactionUseCases.getInfo(transaction_id);
+			if (!transactionDoInfo.success) {
 				return res.json({
 					status: 'error',
-					errorText: 'Транзакция не найденна',
+					errorText: transactionDoInfo.error,
 				});
 			}
 
-			res.json({ status: 'ok', transactionInfo: transaction.getInfo() });
+			res.json({ status: 'ok', transactionInfo:  transactionDoInfo});
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
 		}
 	}
 
-	async goToRequisites(req: express.Request, res: express.Response) {
-		try {
-			const transaction_id = req.params.id;
-			const transaction = this.transactionRepository.getByID(transaction_id);
-
-			if (!transaction) {
-				return res.json({
-					status: 'error',
-					errorText: 'Транзакция не найденна',
-				});
-			}
-			transaction.goToRequisites();
-			res.json({ status: 'ok' });
-		} catch (e) {
-			res.json({ status: 'error', errorText: e.message });
-		}
-	}
 
 	async getAvailableBanks(req: express.Request, res: express.Response) {
 		try {
 			const transaction_id = req.params.id;
-			const transaction = this.transactionRepository.getByID(transaction_id);
 
-			if (!transaction) {
-				return res.json({
-					status: 'error',
-					errorText: 'Транзакция не найденна',
-				});
-			}
-
-			res.json({ status: 'ok', availableBanks: await transaction.getAvailableBanks() || [] });
+			res.json({
+				status: 'ok',
+				availableBanks: await this.transactionUseCases.getAvailableBanks(transaction_id) || [],
+			});
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
 		}
@@ -100,32 +71,17 @@ export class HTTPTransactionController {
 	async selectBank(req: express.Request, res: express.Response) {
 		try {
 			const { transaction_id, bank_name } = req.body;
-			const transaction = this.transactionRepository.getByID(transaction_id);
-			const state = transaction?.getInfo()?.state;
-
-			if (!transaction) {
-				return res.json({
-					status: 'error',
-					errorText: 'Транзакция не найденна',
-				});
-			}
 			if (!bankHelper.getBankConnectionByName(bank_name)) {
 				return res.json({
 					status: 'error',
 					errorText: 'Банк не найден',
 				});
 			}
-			if (state !== TransactionSTATE.SELECT_BANK_STATE) {
+			const transactionDoInfo = await this.transactionUseCases.selectBank(transaction_id, bankHelper.getBankConnectionByName(bank_name));
+			if (!transactionDoInfo.success) {
 				return res.json({
 					status: 'error',
-					errorText: 'Банк уже выбран',
-				});
-			}
-			const isOKSelectBank = await transaction.selectBank(bankHelper.getBankConnectionByName(bank_name));
-			if (!isOKSelectBank) {
-				return res.json({
-					status: 'error',
-					errorText: 'Этот способ оплаты не доступен',
+					errorText: transactionDoInfo.error,
 				});
 			}
 			res.json({ status: 'ok' });
@@ -138,30 +94,9 @@ export class HTTPTransactionController {
 	async confirmPayment(req: express.Request, res: express.Response) {
 		try {
 			const { transaction_id, requisites } = req.body;
-			const transaction = this.transactionRepository.getByID(transaction_id);
-			const state = transaction?.getInfo()?.state;
+			const transactionDoInfo = await this.transactionUseCases.confirmPayment(transaction_id, requisites);
 
-			if (!transaction) {
-				return res.json({
-					status: 'error',
-					errorText: 'Транзакция не найденна',
-				});
-			}
-			if (state !== TransactionSTATE.WAITING_FOR_REQUISITES_STATE) {
-				return res.json({
-					status: 'error',
-					errorText: 'Оплата уже подтверженна',
-				});
-			}
-			if (!await requisitesValidator.validateCardRequisites(requisites)) {
-				return res.json({
-					status: 'error',
-					errorText: 'Реквезиты не корретные',
-				});
-			}
-			const isOk = await transaction.confirmPayment(requisites);
-
-			if (!isOk) return res.json({ status: 'error', errorText: 'Реквезиты не корректны' });
+			if (!transactionDoInfo.success) return res.json({ status: 'error', errorText: transactionDoInfo.error });
 
 			res.json({ status: 'ok' });
 		} catch (e) {
@@ -172,21 +107,14 @@ export class HTTPTransactionController {
 	cancel(req: express.Request, res: express.Response) {
 		try {
 			const { transaction_id } = req.body;
-			const transaction = this.transactionRepository.getByID(transaction_id);
-			const state = transaction?.getInfo()?.state;
-			if (!transaction) {
+
+			const transactionDoInfo = this.transactionUseCases.cancelTransaction(transaction_id);
+			if (!transactionDoInfo.success) {
 				return res.json({
 					status: 'error',
-					errorText: 'Транзакция не найденна',
+					errorText: transactionDoInfo.error,
 				});
 			}
-			if (state === TransactionSTATE.FINISHED_SUCCESS_STATE || state === TransactionSTATE.FINISHED_REJECT_STATE || state === TransactionSTATE.DELETED_STATE) {
-				return res.json({
-					status: 'error',
-					errorText: 'Транзакция уже выполненна',
-				});
-			}
-			transaction.cancelTransaction();
 			res.json({ status: 'ok' });
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
@@ -194,4 +122,4 @@ export class HTTPTransactionController {
 	}
 }
 
-export const httpTransactionController = new HTTPTransactionController(transactionInRAMRepository, shopService);
+export const httpTransactionController = new HTTPTransactionController(transactionUseCases);
