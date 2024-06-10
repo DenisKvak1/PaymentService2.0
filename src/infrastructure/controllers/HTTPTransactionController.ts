@@ -48,7 +48,7 @@ export class HTTPTransactionController {
 				});
 			}
 
-			res.json({ status: 'ok', transactionInfo:  transactionDoInfo});
+			res.json({ status: 'ok', transactionInfo:  transactionDoInfo.data});
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
 		}
