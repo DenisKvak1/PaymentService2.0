@@ -3,7 +3,7 @@ import { IConnection, IShop, Meta } from '../../../../env/types';
 import { TransactionSTATE } from '../../models/Transaction';
 
 export type CreateTransactionDTO = {
-	shop: IShop,
+	shopID: string,
 	meta: Meta,
 	sum: number
 }

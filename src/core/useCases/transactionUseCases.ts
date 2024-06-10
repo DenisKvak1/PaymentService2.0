@@ -1,19 +1,21 @@
 import { ITransactionUseCases } from './interfaces/transaction';
-import { ICardRequisites, IConnection, TransactionDoInfo } from '../../../env/types';
+import { DoInfo, ICardRequisites, IConnection } from '../../../env/types';
 import { CreateTransactionDTO } from '../repository/DTO/transactionDTO';
-import { ITransaction, TransactionInfo, TransactionSTATE } from '../models/Transaction';
+import { TransactionSTATE } from '../models/Transaction';
 import { ITransactionService } from '../services/interface/types';
-import { TransactionService, transactionService } from '../services/TransactionService';
-import { userInfo } from 'node:os';
+import { transactionService } from '../services/TransactionService';
+import { requisitesValidator } from '../validators/RequisitesValidator';
+import { transactionValidator } from '../validators/TransactionValidator';
 
 export class TransactionUseCases implements ITransactionUseCases {
 	constructor(
 		private transactionService: ITransactionService,
-	) {}
+	) {
+	}
 
-	backToSelectBank(id: string): TransactionDoInfo {
+	backToSelectBank(id: string): DoInfo {
 		const transaction = this.transactionService.getByID(id);
-		if(!transaction){
+		if (!transaction) {
 			return {
 				success: false,
 				error: 'Транзакция не найденна',
@@ -25,13 +27,13 @@ export class TransactionUseCases implements ITransactionUseCases {
 				error: 'На данном этапе нельзя вернуться к выбору банков',
 			};
 		}
-		this.transactionService.backToSelectBank(id)
+		this.transactionService.backToSelectBank(id);
 		return { success: true, error: '' };
 	}
 
-	cancelTransaction(id: string): TransactionDoInfo {
+	cancelTransaction(id: string): DoInfo {
 		const transaction = this.transactionService.getByID(id);
-		if(!transaction){
+		if (!transaction) {
 			return {
 				success: false,
 				error: 'Транзакция не найденна',
@@ -47,37 +49,50 @@ export class TransactionUseCases implements ITransactionUseCases {
 				error: 'На данном этапе отменить транзакцию нельзя',
 			};
 		}
-		this.transactionService.cancelTransaction(id)
+		this.transactionService.cancelTransaction(id);
 		return { success: true, error: '' };
 	}
 
-	async confirmPayment(id: string, requisites: ICardRequisites): Promise<TransactionDoInfo> {
+	async confirmPayment(id: string, requisites: ICardRequisites): Promise<DoInfo> {
 		const transaction = this.transactionService.getByID(id);
-		if(!transaction){
+		if (!transaction) {
 			return {
 				success: false,
 				error: 'Транзакция не найденна',
 			};
 		}
-		if(transaction.state !== TransactionSTATE.WAITING_FOR_REQUISITES_STATE) {
+		if (transaction.state === TransactionSTATE.SELECT_BANK_STATE) {
 			return {
 				success: false,
-				error: "На данном этапе нельзя оплатить"
-			}
+				error: 'Банк еще не выбран',
+			};
 		}
-		const isOkPayment = await this.transactionService.confirmPayment(id, requisites)
-		if(!isOkPayment){
+		if (transaction.state !== TransactionSTATE.WAITING_FOR_REQUISITES_STATE) {
 			return {
 				success: false,
-				error: "Оплата не удалась, попробуйте позже"
-			}
+				error: 'На данном этапе нельзя оплатить',
+			};
+		}
+		const validResult = await requisitesValidator.validateCardRequisites(requisites)
+		if (!validResult.valid) {
+			return {
+				success: false,
+				error: validResult.errors.join(", "),
+			};
+		}
+		const isOkPayment = await this.transactionService.confirmPayment(id, requisites);
+		if (!isOkPayment) {
+			return {
+				success: false,
+				error: 'Оплата не удалась, попробуйте позже',
+			};
 		}
 		return { success: true, error: '' };
 	}
 
-	confirmTransaction(id: string): TransactionDoInfo {
+	confirmTransaction(id: string): DoInfo {
 		const transaction = this.transactionService.getByID(id);
-		if(!transaction){
+		if (!transaction) {
 			return {
 				success: false,
 				error: 'Транзакция не найденна',
@@ -93,8 +108,19 @@ export class TransactionUseCases implements ITransactionUseCases {
 		return { success: true, error: '' };
 	}
 
-	create(dto: CreateTransactionDTO): ITransaction {
-		return transactionService.create(dto);
+	create(dto: CreateTransactionDTO): DoInfo {
+		const validateResult = transactionValidator.metaValidate(dto.meta);
+		if (!validateResult.valid) {
+			return {
+				success: false,
+				error: validateResult.errors.join(' '),
+			};
+		}
+		return {
+			success: true,
+			error: '',
+			data: transactionService.create(dto),
+		};
 	}
 
 	destroy(id: string): void {
@@ -105,17 +131,28 @@ export class TransactionUseCases implements ITransactionUseCases {
 		return this.transactionService.getAvailableBanks(id);
 	}
 
-	getInfo(id: string): TransactionInfo | undefined {
-		return this.transactionService.getInfo(id);
+	getInfo(id: string): DoInfo {
+		const transaction = this.transactionService.getInfo(id)
+		if(!transaction){
+			return {
+				success: false,
+				error: "Транзакция не найденна"
+			}
+		}
+		return {
+			success: true,
+			error: '',
+			data: transaction
+		}
 	}
 
 	isExist(id: string): boolean {
 		return this.transactionService.isExist(id);
 	}
 
-	async selectBank(id: string, connection: IConnection): Promise<TransactionDoInfo> {
+	async selectBank(id: string, connection: IConnection): Promise<DoInfo> {
 		const transaction = this.transactionService.getByID(id);
-		if(!transaction){
+		if (!transaction) {
 			return {
 				success: false,
 				error: 'Транзакция не найденна',
@@ -173,4 +210,5 @@ export class TransactionUseCases implements ITransactionUseCases {
 		return stateFunctions[transaction.state]();
 	}
 }
-export const transactionUseCases = new TransactionUseCases(transactionService)
+
+export const transactionUseCases = new TransactionUseCases(transactionService);

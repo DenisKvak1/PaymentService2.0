@@ -3,16 +3,12 @@ import * as express from 'express';
 import { IShop } from '../../core/models/Shop';
 import { bankHelper } from '../modules/bankHelper';
 import { authorizationService } from '../modules/authorizationService';
-import { transactionValidator } from '../validators/TransactionValidator';
-import { requisitesValidator } from '../validators/RequisitesValidator';
-import { IShopService } from '../../core/services/interface/types';
 import { ITransactionUseCases } from '../../core/useCases/interfaces/transaction';
 import { transactionUseCases } from '../../core/useCases/transactionUseCases';
 
 export class HTTPTransactionController {
 	constructor(
 		private transactionUseCases: ITransactionUseCases,
-		private shopService: IShopService,
 	) {
 	}
 
@@ -21,24 +17,20 @@ export class HTTPTransactionController {
 			const { meta, sum } = req.body;
 			const authorizationData = authorizationService.getData(req.headers['authorization']);
 
-			const metaValidateResult = transactionValidator.metaValidate(meta);
-			if (!metaValidateResult.valid) {
-				return res.json({
-					status: 'error',
-					errorText: metaValidateResult.errors.join(' '),
-				});
-			}
-
-			const shop = await this.shopService.getByID(authorizationData.id) as IShop;
-			const transaction = this.transactionUseCases.create({
-				shop,
+			const transactionDoInfo = this.transactionUseCases.create({
+				shopID: authorizationData.id,
 				sum,
 				meta: { name: meta.name, description: meta.description },
 			});
-
+			if(!transactionDoInfo.success){
+				res.json({
+					status: 'error',
+					errorText: transactionDoInfo.error
+				})
+			}
 			res.json({
 				status: 'ok',
-				transactionInfo: { id: transaction.id, ...this.transactionUseCases.getInfo(transaction.id) },
+				transactionInfo: { id: transactionDoInfo.data.id, ...this.transactionUseCases.getInfo(transactionDoInfo.data.id).data },
 			});
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
@@ -48,15 +40,15 @@ export class HTTPTransactionController {
 	async getTransactionInfo(req: express.Request, res: express.Response) {
 		try {
 			const transaction_id = req.params.id;
-			const transaction = this.transactionUseCases.isExist(transaction_id);
-			if (!transaction) {
+			const transactionDoInfo = this.transactionUseCases.getInfo(transaction_id);
+			if (!transactionDoInfo.success) {
 				return res.json({
 					status: 'error',
-					errorText: 'Транзакция не найденна',
+					errorText: transactionDoInfo.error,
 				});
 			}
 
-			res.json({ status: 'ok', transactionInfo: this.transactionUseCases.getInfo(transaction_id) });
+			res.json({ status: 'ok', transactionInfo:  transactionDoInfo});
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
 		}
@@ -102,12 +94,6 @@ export class HTTPTransactionController {
 	async confirmPayment(req: express.Request, res: express.Response) {
 		try {
 			const { transaction_id, requisites } = req.body;
-			if (!await requisitesValidator.validateCardRequisites(requisites)) {
-				return res.json({
-					status: 'error',
-					errorText: 'Реквезиты не корретные',
-				});
-			}
 			const transactionDoInfo = await this.transactionUseCases.confirmPayment(transaction_id, requisites);
 
 			if (!transactionDoInfo.success) return res.json({ status: 'error', errorText: transactionDoInfo.error });
@@ -136,4 +122,4 @@ export class HTTPTransactionController {
 	}
 }
 
-export const httpTransactionController = new HTTPTransactionController(transactionUseCases, shopService);
+export const httpTransactionController = new HTTPTransactionController(transactionUseCases);

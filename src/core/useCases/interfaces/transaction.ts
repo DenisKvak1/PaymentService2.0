@@ -1,16 +1,16 @@
 import { CreateTransactionDTO } from '../../repository/DTO/transactionDTO';
 import { ITransaction, TransactionInfo } from '../../models/Transaction';
-import { ICardRequisites, IConnection, TransactionDoInfo } from '../../../../env/types';
+import { ICardRequisites, IConnection, DoInfo } from '../../../../env/types';
 
-export type ITransactionUseCases= {
-	create(dto: CreateTransactionDTO): ITransaction
+export type ITransactionUseCases = {
+	create(dto: CreateTransactionDTO): DoInfo
 	getAvailableBanks(id: string): Promise<string[]>
-	getInfo(id: string): TransactionInfo | undefined
-	selectBank(id: string, connection: IConnection): Promise<TransactionDoInfo>
-	cancelTransaction(id: string): TransactionDoInfo
-	backToSelectBank(id: string): TransactionDoInfo
-	confirmPayment(id: string, requisites: ICardRequisites): Promise<TransactionDoInfo>
-	confirmTransaction(id: string): TransactionDoInfo
+	getInfo(id: string): DoInfo
+	selectBank(id: string, connection: IConnection): Promise<DoInfo>
+	cancelTransaction(id: string): DoInfo
+	backToSelectBank(id: string): DoInfo
+	confirmPayment(id: string, requisites: ICardRequisites): Promise<DoInfo>
+	confirmTransaction(id: string): DoInfo
 	destroy(id: string): void
 	isExist(id: string): boolean
 }

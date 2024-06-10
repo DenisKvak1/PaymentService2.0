@@ -1,15 +1,12 @@
 import * as express from 'express';
 import { authorizationService } from '../modules/authorizationService';
-import { bankHelper } from '../modules/bankHelper';
-import { IShopService } from '../../core/services/interface/types';
-import { shopValidator } from '../validators/ShopValidator';
-import { shopService } from '../../core/services/ShopService';
-import { luhnCheck } from '../../../env/helpers/luhnCheck';
+import { shopUseCases, ShopUseCases } from '../../core/useCases/shopUseCases';
+import { IShopUseCases } from '../../core/useCases/interfaces/shop';
 
 export class HTTPShopController {
 
 	constructor(
-		private shopService: IShopService,
+		private shopUseCases: IShopUseCases,
 	) {
 	}
 
@@ -17,12 +14,12 @@ export class HTTPShopController {
 		try {
 			const { name } = req.body;
 
-			const resultValidate = shopValidator.nameValidate(name);
+			const shopDoInfo = this.shopUseCases.create({ name });
+			if(!shopDoInfo.success){
+				return res.json({status: 'error', errorText: shopDoInfo.error});
+			}
 
-			if (!resultValidate.valid) return res.json({ status: 'error', errorText: resultValidate.errors.join(' ') });
-
-			const shop = this.shopService.create({ name });
-			const token = authorizationService.createToken({ id: shop.id });
+			const token = authorizationService.createToken({ id: shopDoInfo.data.id });
 			res.json({ status: 'ok', jwt: token });
 		} catch (e) {
 			res.json({ status: 'error', errorText: e.message });
@@ -34,19 +31,10 @@ export class HTTPShopController {
 			const { bankType, requisites } = req.body;
 			const authorizationData = authorizationService.getData(req.headers['authorization']);
 
-			const banks = {
-				myBank: async (requisite: { number: string }) => {
-					const connection = bankHelper.getBankConnectionByName('myBank');
-					if (!luhnCheck(requisite.number.toString())) return false;
-					if (!await connection.checkExistingRequisites(requisites.number)) return false;
-
-					return true;
-				},
-			};
-
-			const isValid = await banks[bankType](requisites);
-			if (!isValid) return res.json({ status: 'Error', errorText: 'Реквезиты не корректны или недостаточный баланс' });
-			this.shopService.setRequisites(authorizationData.id, bankType, requisites);
+			const shopDoInfo = await this.shopUseCases.setRequisites(authorizationData.id, bankType, requisites);
+			if(!shopDoInfo.success){
+				return res.json({status: 'error', errorText: shopDoInfo.error});
+			}
 
 			res.json({ status: 'ok' });
 		} catch (e) {
@@ -55,4 +43,4 @@ export class HTTPShopController {
 	}
 }
 
-export const httpShopController = new HTTPShopController(shopService);
+export const httpShopController = new HTTPShopController(shopUseCases);
