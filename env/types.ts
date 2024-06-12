@@ -13,6 +13,7 @@ export type IConnection = {
 	isValidRequisites(requisites: ICardRequisites): Promise<boolean>
 	debitRequest(requisites: ICardRequisites, receiverAddress: string | number, sum: number): Promise<number | undefined>
 	checkExistingRequisites(requisites: string): Promise<boolean>
+	checkSufficientBalance(requisites: string, sum: number): Promise<boolean>
 	subscribeOnDebitResponse(requestID: number, callback: (response: boolean) => void): ISubscribe
 	getName(): string
 }

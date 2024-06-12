@@ -32,8 +32,9 @@ export class TransactionService implements ITransactionService {
 		return availableBanks;
 	}
 
-	getInfo(id: string): TransactionInfo {
+	getInfo(id: string): TransactionInfo | undefined{
 		const transaction = this.transactionRepository.getByID(id);
+		if(!transaction) return undefined
 		return {
 			state: transaction.state,
 			meta: transaction.meta,

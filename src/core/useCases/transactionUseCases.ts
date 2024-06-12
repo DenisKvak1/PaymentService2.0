@@ -8,6 +8,7 @@ import { requisitesValidator } from '../validators/RequisitesValidator';
 import { transactionValidator } from '../validators/TransactionValidator';
 import { shopService } from '../services/ShopService';
 import { checkNullObject } from '../../../env/helpers/checkNullObject';
+import { transactionInRAMRepository } from '../../infrastructure/database/repository/TransactionInRAMRepository';
 
 export class TransactionUseCases implements ITransactionUseCases {
 	constructor(
@@ -76,6 +77,12 @@ export class TransactionUseCases implements ITransactionUseCases {
 				error: 'На данном этапе нельзя оплатить',
 			};
 		}
+		if(!await transaction.bank.ping()){
+			return {
+				success: false,
+				error: "Банк не доступен попробуйте позже"
+			}
+		}
 		const validResult = await requisitesValidator.validateCardRequisites(requisites)
 		if (!validResult.valid) {
 			return {
@@ -83,6 +90,20 @@ export class TransactionUseCases implements ITransactionUseCases {
 				error: validResult.errors.join(", "),
 			};
 		}
+		if(!await transaction.bank.isValidRequisites(requisites)){
+			return {
+				success: false,
+				error: "Реквезиты не корректны"
+			}
+		}
+
+		if(!await transaction.bank.checkSufficientBalance(requisites.number.toString(), transaction.sum)){
+			return {
+				success: false,
+				error: "Сумма не достаточна для оплаты"
+			}
+		}
+
 		const isOkPayment = await this.transactionService.confirmPayment(id, requisites);
 		if (!isOkPayment) {
 			return {

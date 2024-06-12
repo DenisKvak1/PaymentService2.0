@@ -1,5 +1,7 @@
 import { ICardRequisites, IConnection, ISubscribe } from '../../../env/types';
 import axios from 'axios';
+import { response } from 'express';
+import { clearInterval } from 'node:timers';
 
 export class MyBankConnection implements IConnection {
 	getName(): string {
@@ -57,6 +59,16 @@ export class MyBankConnection implements IConnection {
 			clearInterval(interval);
 		}, 10000);
 		return { unsubscribe: () => clearInterval(interval) };
+	}
+
+	async checkSufficientBalance(requisites: string, sum: number): Promise<boolean> {
+		const response = await axios.post('http://127.0.0.1:3001/card/checkSufficientBalance', {
+			requisites: {
+				number: requisites,
+				sum
+			},
+		});
+		return Boolean(response.data.isSufficient);
 	}
 }
 
