@@ -1,5 +1,5 @@
 import { ITransactionRepository } from '../repository/ITransactionRepository';
-import { ICardRequisites, IConnection } from '../../../env/types';
+import { bankInfo, ICardRequisites, IConnection } from '../../../env/types';
 import { bankHelper } from '../../infrastructure/modules/bankHelper';
 import { config } from '../../../env/config';
 import { ITransaction, TransactionInfo, TransactionSTATE } from '../models/Transaction';
@@ -17,16 +17,20 @@ export class TransactionService implements ITransactionService {
 		return this.transactionRepository.create(dto);
 	}
 
-	async getAvailableBanks(id: string): Promise<string[]> {
+	async getAvailableBanks(id: string): Promise<bankInfo[]> {
 		const transaction = this.transactionRepository.getByID(id);
-		const availableBanks: string[] = [];
+		const availableBanks:bankInfo[] = [];
 		for (const key in transaction.shop.requisites) {
 			if (transaction.shop.requisites[key]) {
 				const connection = bankHelper.getBankConnectionByName(key);
 				if (!connection) continue;
 				const isPinged = await connection.ping();
-				if (!isPinged) continue;
-				availableBanks.push(key);
+				availableBanks.push({
+					id: key,
+					name: 'Мой банк',
+					image: `${config.IP}/images/${key}Icon.png`,
+					isAvailable: isPinged,
+				});
 			}
 		}
 		return availableBanks;

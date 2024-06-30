@@ -9,6 +9,7 @@ export function authenticationMiddleware(req: express.Request, res: express.Resp
 	if (req.path === '/shop/create') return next();
 	if (req.path === '/transaction/confirmPayment') return next();
 	if (req.path.startsWith('/transaction') && req.path !== '/transaction/create') return next();
+	if (req.path.startsWith('/images')) return next();
 
 	if (isAuth) return next();
 	res.json({ status: 'error', errorText: 'Не авторизован' });

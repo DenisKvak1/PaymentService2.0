@@ -16,6 +16,7 @@ export class ExpressApp {
 		this.app = express();
 		this.setupMiddleware();
 		this.setupRoutes();
+		this.setupStaticFiles(); // Добавляем установку статики
 	}
 
 	private setupMiddleware() {
@@ -30,12 +31,16 @@ export class ExpressApp {
 
 	private setupRoutes() {
 		this.app.use('/shop', shopRouter);
-		this.app.use('/transaction', transactionRouter, );
+		this.app.use('/transaction', transactionRouter);
+	}
+
+	private setupStaticFiles() {
+		this.app.use(express.static('static'));
 	}
 
 	start(port: number) {
 		this.app.listen(port, () => {
-			console.log('Server is running on port 3000');
+			console.log(`Server is running on port ${port}`);
 		});
 	}
 }

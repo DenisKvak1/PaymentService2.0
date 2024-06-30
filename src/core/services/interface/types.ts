@@ -1,6 +1,6 @@
 import { CreateShopDTO } from '../../repository/DTO/shopRepositoryDTO';
 import { IShop } from '../../models/Shop';
-import { ICardRequisites, IConnection } from '../../../../env/types';
+import { bankInfo, ICardRequisites, IConnection } from '../../../../env/types';
 import { CreateTransactionDTO } from '../../repository/DTO/transactionDTO';
 import { ITransaction, TransactionInfo } from '../../models/Transaction';
 
@@ -13,7 +13,7 @@ export type IShopService = {
 }
 export type ITransactionService = {
 	create(dto: CreateTransactionDTO): ITransaction
-	getAvailableBanks(id: string): Promise<string[]>
+	getAvailableBanks(id: string): Promise<bankInfo[]>
 	getInfo(id: string): TransactionInfo
 	selectBank(id: string, connection: IConnection): Promise<void>
 	cancelTransaction(id: string): void

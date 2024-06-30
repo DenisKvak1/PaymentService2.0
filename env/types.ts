@@ -42,4 +42,11 @@ export type DoInfo = {
 	error: string
 	data?: any
 }
+export type bankInfo = {
+	id: string;
+	name: string;
+	image: string;
+	isAvailable: boolean;
+};
+
 export type ISubscribe = { unsubscribe: () => void }

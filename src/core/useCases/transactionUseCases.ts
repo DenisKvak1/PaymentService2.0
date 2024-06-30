@@ -1,5 +1,5 @@
 import { ITransactionUseCases } from './interfaces/transaction';
-import { DoInfo, ICardRequisites, IConnection } from '../../../env/types';
+import { bankInfo, DoInfo, ICardRequisites, IConnection } from '../../../env/types';
 import { CreateTransactionDTO, CreateUseCasesTransactionDTO } from '../repository/DTO/transactionDTO';
 import { TransactionSTATE } from '../models/Transaction';
 import { IShopService, ITransactionService } from '../services/interface/types';
@@ -141,6 +141,7 @@ export class TransactionUseCases implements ITransactionUseCases {
 			};
 		}
 		const shop = await this.shopService.getByID(dto.shopID)
+
 		if(checkNullObject(shop.requisites)){
 			return {
 				success: false,
@@ -158,7 +159,7 @@ export class TransactionUseCases implements ITransactionUseCases {
 		this.transactionService.destroy(id);
 	}
 
-	getAvailableBanks(id: string): Promise<string[]> {
+	getAvailableBanks(id: string): Promise<bankInfo[]> {
 		return this.transactionService.getAvailableBanks(id);
 	}
 
@@ -192,7 +193,7 @@ export class TransactionUseCases implements ITransactionUseCases {
 		const stateFunctions: { [key in TransactionSTATE]: Function } = {
 			[TransactionSTATE.SELECT_BANK_STATE]: async () => {
 				const banks = await transactionService.getAvailableBanks(id);
-				const includeBank = banks.includes(connection.getName());
+				const includeBank = banks.some((bank)=> bank.id === connection.getName() && bank.isAvailable)
 
 				if (!includeBank) {
 					return {
