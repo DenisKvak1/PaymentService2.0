@@ -28,7 +28,7 @@ export class TransactionService implements ITransactionService {
 				availableBanks.push({
 					id: key,
 					name: 'Мой банк',
-					image: `${config.IP}/images/${key}Icon.png`,
+					image: `http://${config.IP}/images/${key}Icon.png`,
 					isAvailable: isPinged,
 				});
 			}
