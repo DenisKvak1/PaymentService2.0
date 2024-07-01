@@ -15,7 +15,7 @@ export type TransactionInfo = {
 	sum: number
 }
 
-export class ITransaction {
+export type ITransaction = {
 	id: string
 	shop: IShop
 	bank: IConnection

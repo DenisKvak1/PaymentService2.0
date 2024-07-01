@@ -36,9 +36,9 @@ export class TransactionService implements ITransactionService {
 		return availableBanks;
 	}
 
-	getInfo(id: string): TransactionInfo | undefined{
+	getInfo(id: string): TransactionInfo | undefined {
 		const transaction = this.transactionRepository.getByID(id);
-		if(!transaction) return undefined
+		if (!transaction) return undefined;
 		return {
 			state: transaction.state,
 			meta: transaction.meta,
@@ -57,8 +57,8 @@ export class TransactionService implements ITransactionService {
 		this.transactionRepository.update(id, { state: TransactionSTATE.FINISHED_REJECT_STATE });
 	}
 
-	backToSelectBank(id: string): void {
-		this.transactionRepository.update(id, { state: TransactionSTATE.SELECT_BANK_STATE });
+	backToSelectBank(transactionID: string): void {
+		this.transactionRepository.update(transactionID, { state: TransactionSTATE.SELECT_BANK_STATE });
 	}
 
 	async confirmPayment(id: string, requisites: ICardRequisites): Promise<boolean> {
@@ -104,8 +104,8 @@ export class TransactionService implements ITransactionService {
 		return this.transactionRepository.getByID(id);
 	}
 
-	isExist(id: string): boolean {
-		return Boolean(this.transactionRepository.getByID(id));
+	isExist(transactionID: string): boolean {
+		return Boolean(this.transactionRepository.getByID(transactionID));
 	}
 }
 
